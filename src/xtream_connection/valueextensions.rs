@@ -1,4 +1,4 @@
-use chrono::DateTime;
+use chrono::{DateTime, NaiveDateTime};
 use serde_json::Value;
 use std::str::FromStr;
 
@@ -7,18 +7,19 @@ pub trait ValueExtensions {
     fn t_string(&self) -> String;
     fn get_name(&self) -> String;
     fn get_category_name(&self) -> String;
-
     fn get_category_id(&self) -> i32;
     fn get_parent_id(&self) -> i32;
     fn get_stream_id(&self) -> i32;
-    fn expires(&self) -> String;
-    fn created(&self) -> String;
+    fn expires(&self) -> NaiveDateTime;
+    fn created(&self) -> NaiveDateTime;
     fn max_connections(&self) -> i32;
     fn is_trial(&self) -> bool;
     fn status(&self) -> String;
     fn active_cons(&self) -> i32;
     fn get_ext(&self) -> String;
     fn get_num(&self) -> i32;
+    fn to_date(&self) -> NaiveDateTime;
+    fn to_bool(&self) -> bool;
 }
 
 impl ValueExtensions for Value {
@@ -57,23 +58,20 @@ impl ValueExtensions for Value {
     fn get_num(&self) -> i32 {
         self["num"].to_i32()
     }
-    fn expires(&self) -> String {
-        let exp_ts = match self["user_info"]["exp_date"].as_str() {
-            Some(s) => s.parse().unwrap(),
-            _ => self["user_info"]["exp_date"].as_i64().unwrap_or_default(),
-        };
-        DateTime::from_timestamp(exp_ts, 0)
-            .unwrap_or_default()
-            .to_string()
+    fn expires(&self) -> NaiveDateTime {
+        self["user_info"]["exp_date"].to_date()
     }
-    fn created(&self) -> String {
-        let created_ts = match self["user_info"]["created_at"].as_str() {
+    fn created(&self) -> NaiveDateTime {
+        self["user_info"]["created_at"].to_date()
+    }
+    fn to_date(&self) -> NaiveDateTime {
+        let added_ts = match self.as_str() {
             Some(s) => s.parse().unwrap(),
-            _ => self["user_info"]["created_at"].as_i64().unwrap_or_default(),
+            _ => self.as_i64().unwrap_or_default(),
         };
-        DateTime::from_timestamp(created_ts, 0)
+        DateTime::from_timestamp(added_ts, 0)
             .unwrap_or_default()
-            .to_string()
+            .naive_utc()
     }
     fn max_connections(&self) -> i32 {
         self["user_info"]["max_connections"].to_i32()
@@ -85,9 +83,12 @@ impl ValueExtensions for Value {
         self["user_info"]["active_cons"].to_i32()
     }
     fn is_trial(&self) -> bool {
-        match self["user_info"]["is_trial"].is_boolean() {
-            true => self["user_info"]["is_trial"].as_bool().unwrap(),
-            false => matches!(self["user_info"]["is_trial"].as_str(), Some("1")),
+        self["user_info"]["is_trial"].to_bool()
+    }
+    fn to_bool(&self) -> bool {
+        match self.is_boolean() {
+            true => self.as_bool().unwrap(),
+            false => matches!(self.as_str(), Some("1")),
         }
     }
 }
