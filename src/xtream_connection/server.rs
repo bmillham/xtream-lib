@@ -3,6 +3,7 @@ use reqwest;
 use serde_json::Value;
 use crate::xtream_info::account::Account;
 use crate::xtream_info::categories::Category;
+use crate::xtream_info::stream::Stream;
 use crate::xtream_info::user_info::UserInfo;
 
 #[derive(Debug)]
@@ -64,7 +65,10 @@ impl Server<'_> {
                 //println!("{:#?}", r);
                 r
             },
-            _ => std::process::exit(1),
+            Err(e) => {
+                println!("Error {e:?}");
+                std::process::exit(1)
+            },
         }
     }
 
@@ -86,11 +90,14 @@ impl Server<'_> {
         );
         match self.get_vec_url(&url).await {
             Ok(r) => r.clone(),
-            _ => std::process::exit(1),
+            Err(e) => {
+                println!("Error {e:?}");
+                std::process::exit(1)
+            },
         }
     }
 
-    pub async fn get_live_streams(&self, id: Option<u32>) -> Vec<Value> {
+    pub async fn get_live_streams(&self, id: Option<u32>) -> Vec<Stream> {
         let mut url = format!(
             "{}/player_api.php?username={}&password={}&action=get_live_streams",
             self.server, self.username, self.password
@@ -100,8 +107,14 @@ impl Server<'_> {
             url.push_str(format!("&category_id={i}").as_str());
         };
         match self.get_vec_url(&url).await {
-            Ok(r) => r.clone(),
-            _ => std::process::exit(1),
+            Ok(r) => {
+                //println!("{:#?}", r);
+                r
+            },
+            Err(e) => {
+                println!("Error {e:?}");
+                std::process::exit(1)
+            },
         }
     }
 
