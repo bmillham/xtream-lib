@@ -1,6 +1,8 @@
 use reqwest;
+//use serde_json::error::Category;
 use serde_json::Value;
 use crate::xtream_info::account::Account;
+use crate::xtream_info::categories::{Category, CategoryList};
 use crate::xtream_info::user_info::UserInfo;
 
 #[derive(Debug)]
@@ -27,7 +29,7 @@ impl Server<'_> {
         }
     }
 
-    async fn get_vec_url(&self, url: &str) -> Result<Vec<Value>, reqwest::Error> {
+    async fn get_vec_url<T: for<'de> serde::Deserialize<'de>>(&self, url: &str) -> Result<Vec<T>, reqwest::Error> {
         match reqwest::get(url).await {
             Ok(resp) => {
                 if resp.status() != 200 {
@@ -52,13 +54,17 @@ impl Server<'_> {
         }
     }
 
-    pub async fn get_live_categories(&self) -> Vec<Value> {
+    pub async fn get_live_categories(&self) -> Vec<Category> {
         let url = format!(
             "{}/player_api.php?username={}&password={}&action=get_live_categories",
             self.server, self.username, self.password
         );
+        println!("{url}");
         match self.get_vec_url(&url).await {
-            Ok(r) => r.clone(),
+            Ok(r) => {
+                //println!("{:#?}", r);
+                r
+            },
             _ => std::process::exit(1),
         }
     }
