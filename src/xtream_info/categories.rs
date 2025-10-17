@@ -17,7 +17,3 @@ impl CategoryExtensions for Category {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CategoryList {
-    pub categories: Vec<Category>,
-}

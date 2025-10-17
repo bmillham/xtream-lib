@@ -2,7 +2,7 @@ use reqwest;
 //use serde_json::error::Category;
 use serde_json::Value;
 use crate::xtream_info::account::Account;
-use crate::xtream_info::categories::{Category, CategoryList};
+use crate::xtream_info::categories::Category;
 use crate::xtream_info::user_info::UserInfo;
 
 #[derive(Debug)]
@@ -59,7 +59,6 @@ impl Server<'_> {
             "{}/player_api.php?username={}&password={}&action=get_live_categories",
             self.server, self.username, self.password
         );
-        println!("{url}");
         match self.get_vec_url(&url).await {
             Ok(r) => {
                 //println!("{:#?}", r);
