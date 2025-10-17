@@ -1,5 +1,7 @@
 use reqwest;
+use serde::{Serialize, Deserialize};
 use serde_json::Value;
+use chrono::{DateTime, NaiveDateTime, Utc};
 
 #[derive(Debug)]
 pub struct Server<'a> {
@@ -8,15 +10,73 @@ pub struct Server<'a> {
     password: &'a str,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Xdate {
+    Str(String),
+    I64(i64),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Xbool {
+    Str(String),
+    Bool(bool),
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct UserInfo {
+    pub user_info: Account,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct Account {
+    pub created_at: Xdate,
+    pub exp_date: Xdate,
+    pub status: String,
+    pub max_connections: String,
+    pub active_cons: String,
+    pub is_trial: Xbool,
+}
+
+pub trait XdateExtensions {
+    fn to_date(&self) -> NaiveDateTime;
+}
+
+impl XdateExtensions for Xdate {
+    fn to_date(&self) -> NaiveDateTime {
+        let ts = match self {
+            Xdate::Str(s) => s.parse::<i64>().unwrap(),
+            Xdate::I64(i) => *i,
+        };
+        DateTime::from_timestamp(ts, 0)
+            .unwrap_or_default()
+            .naive_utc()
+    }
+}
+
+pub trait XboolExtensions {
+    fn to_bool(&self) -> bool;
+}
+
+impl XboolExtensions for Xbool {
+    fn to_bool(&self) -> bool {
+        match self {
+            Xbool::Str(s) => matches!(s.as_str(), "1"),
+            Xbool::Bool(b) => *b,
+        }
+    }
+}
+
 impl Server<'_> {
-    async fn get_url(&self, url: &str) -> Result<Value, reqwest::Error> {
+    async fn get_url<T: for<'de> serde::Deserialize<'de>>(&self, url: &str) -> Result<T, reqwest::Error> {
         match reqwest::get(url).await {
             Ok(resp) => {
                 if resp.status() != 200 {
                     println!("Error {} getting {url}", resp.status());
                     panic!("Verify that your username and password are correct");
                 }
-                resp.json::<Value>().await
+                resp.json::<T>().await
             }
             Err(e) => {
                 println!("Error: {e:?}");
@@ -36,13 +96,13 @@ impl Server<'_> {
             Err(e) => Err(e),
         }
     }
-    pub async fn get_account_info(&self) -> Value {
+    pub async fn get_account_info(&self) -> Account {
         let url = format!(
             "{}/player_api.php?username={}&password={}",
             self.server, self.username, self.password
         );
-        match &self.get_url(&url).await {
-            Ok(r) => r.clone(),
+        match self.get_url::<UserInfo>(&url).await {
+            Ok(r) => r.user_info,
             Err(e) => {
                 println!("error {e:?}");
                 std::process::exit(1);
