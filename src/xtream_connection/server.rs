@@ -28,17 +28,6 @@ impl Server<'_> {
         }
     }
 
-    async fn get_vec_url<T: for<'de> serde::Deserialize<'de>>(&self, url: &str) -> Result<Vec<T>, reqwest::Error> {
-        match reqwest::get(url).await {
-            Ok(resp) => {
-                if resp.status() != 200 {
-                    println!("Error {} getting {url}", resp.status());
-                }
-                resp.json().await
-            }
-            Err(e) => Err(e),
-        }
-    }
     pub async fn get_account_info(&self) -> Result<Account, reqwest::Error> {
         let url = format!(
             "{}/player_api.php?username={}&password={}",
@@ -57,40 +46,23 @@ impl Server<'_> {
             "{}/player_api.php?username={}&password={}&action=get_live_categories",
             self.server, self.username, self.password
         );
-        //match self.get_vec_url(&url).await {
-        match self.get_url::<Vec<Category>>(&url).await {
-            Ok(r) => {
-                Ok(r)
-            },
-            Err(e) => {
-                Err(e)
-            },
-        }
+        self.get_url::<Vec<Category>>(&url).await
     }
 
-    pub async fn get_vod_categories(&self) -> Vec<Value> {
+    pub async fn get_vod_categories(&self) -> Result<Vec<Category>, reqwest::Error> {
         let url = format!(
             "{}/player_api.php?username={}&password={}&action=get_vod_categories",
             self.server, self.username, self.password
         );
-        match self.get_vec_url(&url).await {
-            Ok(r) => r.clone(),
-            _ => std::process::exit(1),
-        }
+        self.get_url::<Vec<Category>>(&url).await
     }
 
-    pub async fn get_series_categories(&self) -> Vec<Value> {
+    pub async fn get_series_categories(&self) -> Result<Vec<Category>, reqwest::Error> {
         let url = format!(
             "{}/player_api.php?username={}&password={}&action=get_series_categories",
             self.server, self.username, self.password
         );
-        match self.get_vec_url(&url).await {
-            Ok(r) => r.clone(),
-            Err(e) => {
-                println!("Error {e:?}");
-                std::process::exit(1)
-            },
-        }
+        self.get_url::<Vec<Category>>(&url).await
     }
 
     pub async fn get_live_streams(&self, id: Option<u32>) -> Result<Vec<Stream>, reqwest::Error> {
@@ -102,18 +74,10 @@ impl Server<'_> {
         if let Some(i) = id {
             url.push_str(format!("&category_id={i}").as_str());
         };
-        //match self.get_vec_url(&url).await {
-        match self.get_url::<Vec<Stream>>(&url).await {
-            Ok(r) => {
-                Ok(r)
-            },
-            Err(e) => {
-                Err(e)
-            },
-        }
+        self.get_url::<Vec<Stream>>(&url).await
     }
 
-    pub async fn get_vod_streams(&self, id: Option<u32>) -> Vec<Value> {
+    pub async fn get_vod_streams(&self, id: Option<u32>) -> Result<Vec<Stream>, reqwest::Error> {
         let mut url = format!(
             "{}/player_api.php?username={}&password={}&action=get_vod_streams",
             self.server, self.username, self.password
@@ -122,13 +86,10 @@ impl Server<'_> {
         if let Some(i) = id {
             url.push_str(format!("&category_id={i}").as_str());
         };
-        match self.get_vec_url(&url).await {
-            Ok(r) => r.clone(),
-            _ => std::process::exit(1),
-        }
+        self.get_url::<Vec<Stream>>(&url).await
     }
 
-    pub async fn get_series_streams(&self, id: Option<u32>) -> Vec<Value> {
+    pub async fn get_series_streams(&self, id: Option<u32>) -> Result<Vec<Stream>, reqwest::Error> {
         let mut url = format!(
             "{}/player_api.php?username={}&password={}&action=get_series",
             self.server, self.username, self.password
@@ -137,13 +98,10 @@ impl Server<'_> {
         if let Some(i) = id {
             url.push_str(format!("&category_id={i}").as_str());
         };
-        match self.get_vec_url(&url).await {
-            Ok(r) => r.clone(),
-            _ => std::process::exit(1),
-        }
+        self.get_url::<Vec<Stream>>(&url).await
     }
 
-    pub async fn get_short_epg(&self, id: u32, limit: Option<u32>) -> Vec<Value> {
+    pub async fn get_short_epg(&self, id: u32, limit: Option<u32>) -> Result<Vec<Value>, reqwest::Error> {
         let mut url = format!(
             "{}/player_api.php?username={}&password={}&action=get_short_epg&stream_id={id}",
             self.server, self.username, self.password
@@ -152,10 +110,7 @@ impl Server<'_> {
         if let Some(l) = limit {
             url.push_str(format!("&limit={l}").as_str());
         };
-        match self.get_vec_url(&url).await {
-            Ok(r) => r.clone(),
-            _ => std::process::exit(1),
-        }
+        self.get_url::<Vec<Value>>(&url).await
     }
 }
 
