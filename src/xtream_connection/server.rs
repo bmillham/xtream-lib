@@ -57,7 +57,8 @@ impl Server<'_> {
             "{}/player_api.php?username={}&password={}&action=get_live_categories",
             self.server, self.username, self.password
         );
-        match self.get_vec_url(&url).await {
+        //match self.get_vec_url(&url).await {
+        match self.get_url::<Vec<Category>>(&url).await {
             Ok(r) => {
                 Ok(r)
             },
@@ -101,7 +102,8 @@ impl Server<'_> {
         if let Some(i) = id {
             url.push_str(format!("&category_id={i}").as_str());
         };
-        match self.get_vec_url(&url).await {
+        //match self.get_vec_url(&url).await {
+        match self.get_url::<Vec<Stream>>(&url).await {
             Ok(r) => {
                 Ok(r)
             },
