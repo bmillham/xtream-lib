@@ -24,8 +24,7 @@ impl Server<'_> {
                 resp.json::<T>().await
             }
             Err(e) => {
-                println!("Error: {e:?}");
-                std::process::exit(1);
+                Err(e)
             }
         }
     }
@@ -41,16 +40,15 @@ impl Server<'_> {
             Err(e) => Err(e),
         }
     }
-    pub async fn get_account_info(&self) -> Account {
+    pub async fn get_account_info(&self) -> Result<Account, reqwest::Error> {
         let url = format!(
             "{}/player_api.php?username={}&password={}",
             self.server, self.username, self.password
         );
         match self.get_url::<UserInfo>(&url).await {
-            Ok(r) => r.user_info,
+            Ok(r) => Ok(r.user_info),
             Err(e) => {
-                println!("error {e:?}");
-                std::process::exit(1);
+                Err(e)
             }
         }
     }
